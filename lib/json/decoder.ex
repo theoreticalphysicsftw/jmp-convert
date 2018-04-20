@@ -3,8 +3,9 @@ defmodule Json.Decoder do
     decode_array(String.trim_leading(rest), [])
   end
 
-  # def decode(<<?{::utf8, _::binary>> = string) do 
-  # end
+  def decode(<<?{::utf8, rest::binary>>) do
+    decode_map(String.trim_leading(rest), Map.new())
+  end
 
   def decode(<<?-::utf8, number::utf8, _::binary>> = string) when number in ?0..?9 do
     decode_number(string)
@@ -120,6 +121,58 @@ defmodule Json.Decoder do
 
       {value, rest} ->
         {:ok, value, rest}
+    end
+  end
+
+  defp decode_map(<<?}::utf8, rest::binary>>, decoded) do
+    {:ok, decoded, rest}
+  end
+
+  defp decode_map(<<>>, _) do
+    {:error, :unexpected_end_of_map}
+  end
+
+  defp decode_map(<<?"::utf8, rest::binary>>, decoded) do
+    decode_map_key(rest, decoded)
+  end
+
+  defp decode_map(_, _) do
+    {:error, :invalid_expression}
+  end
+
+  defp decode_map_key(string, decoded) do
+    decode_string(string, <<>>)
+    |> case do
+      {:error, error_code} ->
+        {:error, error_code}
+
+      {:ok, key, rest} ->
+        String.trim_leading(rest)
+        |> case do
+          <<?:::utf8, remaining::binary>> ->
+            decode_map_value(String.trim_leading(remaining), key, decoded)
+
+          _ ->
+            {:error, :missing_key_value_separator}
+        end
+    end
+  end
+
+  defp decode_map_value(string, key, decoded) do
+    decode(string)
+    |> case do
+      {:error, error_code} ->
+        {:error, error_code}
+
+      {:ok, value, rest} ->
+        String.trim_leading(rest)
+        |> case do
+          <<?,::utf8, remaining::binary>> ->
+            decode_map(String.trim_leading(remaining), Map.put(decoded, key, value))
+
+          remaining ->
+            decode_map(remaining, Map.put(decoded, key, value))
+        end
     end
   end
 end
