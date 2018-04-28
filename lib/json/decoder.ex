@@ -15,6 +15,18 @@ defmodule Json.Decoder do
     decode_number(string)
   end
 
+  def decode("null" <> <<rest::binary>>) do
+    {:ok, nil, rest}
+  end
+
+  def decode("true" <> <<rest::binary>>) do
+    {:ok, true, rest}
+  end
+
+  def decode("false" <> <<rest::binary>>) do
+    {:ok, false, rest}
+  end
+
   def decode(<<?"::utf8, rest::binary>>) do
     decode_string(rest, <<>>)
   end

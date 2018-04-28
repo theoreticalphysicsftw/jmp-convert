@@ -132,6 +132,10 @@ defmodule MsgPack.Decoder do
     decode_map(length, %{}, rest)
   end
 
+  def decode(_) do
+    {:error, :unrecognized_format}
+  end
+
   defp decode_array(0, decoded, data) do
     {:ok, Enum.reverse(decoded), data}
   end

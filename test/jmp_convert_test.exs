@@ -2,6 +2,7 @@ defmodule JmpConvertTest do
   use ExUnit.Case
   doctest JmpConvert
   doctest Json
+  doctest MsgPack
 
   test "decodes negative integers" do
     assert Json.decode_strict("-1337") == {:ok, -1337}
@@ -63,5 +64,76 @@ defmodule JmpConvertTest do
   test "encodes maps" do
     assert Json.encode(%{"key0" => ["value0"], "key1" => %{"v" => 3}}) ==
              "{\"key0\":[\"value0\"],\"key1\":{\"v\":3}}"
+  end
+
+  test "inverse integer test" do
+    assert MsgPack.decode(MsgPack.encode(666)) == {:ok, 666, ""}
+  end
+
+  test "inverse float test" do
+    assert MsgPack.decode(MsgPack.encode(6.02e23)) == {:ok, 6.02e23, ""}
+  end
+
+  test "inverse string test" do
+    assert MsgPack.decode(MsgPack.encode("str")) == {:ok, "str", ""}
+  end
+
+  test "inverse array test" do
+    assert MsgPack.decode(MsgPack.encode([1, 2, 3])) == {:ok, [1, 2, 3], ""}
+  end
+
+  test "inverse map test" do
+    assert MsgPack.decode(MsgPack.encode(%{"a" => 1, "b" => 2})) ==
+             {:ok, %{"a" => 1, "b" => 2}, ""}
+  end
+
+  test "inverse nested structure test" do
+    assert MsgPack.decode(
+             MsgPack.encode(%{
+               "a" => [1, 2, nil, %{false => "a", [nil, 1] => "З"}],
+               1 => [1, "abc", [], [[[]]]]
+             })
+           ) ==
+             {:ok,
+              %{
+                "a" => [1, 2, nil, %{false => "a", [nil, 1] => "З"}],
+                1 => [1, "abc", [], [[[]]]]
+              }, ""}
+  end
+
+  test "conversion inverse integer test" do
+    y = "666"
+    {:ok, x, _} = JmpConvert.json_to_msg_pack(y)
+    assert JmpConvert.msg_pack_to_json(x) == {:ok, y, ""}
+  end
+
+  test "conversion inverse float test" do
+    y = "6.02e23"
+    {:ok, x, _} = JmpConvert.json_to_msg_pack(y)
+    assert JmpConvert.msg_pack_to_json(x) == {:ok, y, ""}
+  end
+
+  test "conversion inverse string test" do
+    y = "\"абвгдежз\""
+    {:ok, x, _} = JmpConvert.json_to_msg_pack(y)
+    assert JmpConvert.msg_pack_to_json(x) == {:ok, y, ""}
+  end
+
+  test "conversion inverse array test" do
+    y = "[6,6,6]"
+    {:ok, x, _} = JmpConvert.json_to_msg_pack(y)
+    assert JmpConvert.msg_pack_to_json(x) == {:ok, y, ""}
+  end
+
+  test "conversion inverse map test" do
+    y = "{\"0\":[1,2,3],\"X\":4}"
+    {:ok, x, _} = JmpConvert.json_to_msg_pack(y)
+    assert JmpConvert.msg_pack_to_json(x) == {:ok, y, ""}
+  end
+
+  test "conversion inverse nested structure test" do
+    y = "{\"0\":[{\"key\":[\"abc\",false],\"t\":null},2,3],\"X\":{\"Y\":{\"Z\":[null]}}}"
+    {:ok, x, _} = JmpConvert.json_to_msg_pack(y)
+    assert JmpConvert.msg_pack_to_json(x) == {:ok, y, ""}
   end
 end

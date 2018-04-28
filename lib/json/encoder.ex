@@ -8,6 +8,16 @@ defimpl Json.Encoder, for: [Integer, Float] do
   end
 end
 
+defimpl Json.Encoder, for: Atom do
+  def encode(nil) do
+    "null"
+  end
+
+  def encode(atom) do
+    to_string(atom)
+  end
+end
+
 defimpl Json.Encoder, for: List do
   def encode(list) do
     "[" <> Enum.map_join(list, ",", fn x -> Json.Encoder.encode(x) end) <> "]"
